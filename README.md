@@ -1,1 +1,1 @@
-# world
+This is a JavaFX building block programming IDE that I used. Due to some programming skills and other reasons, I had to open source the source code. I hope the community can work with me to maintain this project
