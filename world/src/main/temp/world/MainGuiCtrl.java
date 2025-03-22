@@ -248,7 +248,6 @@ public class MainGuiCtrl {
         VBox mainContainer = new VBox();
         mainContainer.getChildren().add(codeBlocks);
         dropLayer = new StackPane();
-        dropLayer.setPickOnBounds(false);
         dropLayer.setStyle("-fx-background-color: transparent;");
         dropLayer.prefHeightProperty().bind(codeBlocks.heightProperty());
         dropLayer.setOnDragEntered(event -> {

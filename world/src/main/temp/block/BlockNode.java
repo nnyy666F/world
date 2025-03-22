@@ -1,6 +1,5 @@
 package com.mirror.block;
 
-import javafx.event.Event;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -8,7 +7,6 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputControl;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -41,14 +39,8 @@ public class BlockNode extends HBox {
     }
     public BlockNode(BlockDef definition) {
         this.definition = definition;
-        setPickOnBounds(false);
-        setMouseTransparent(false);
-        setFocusTraversable(false);
         buildUI();
         setupDragHandlers();
-        this.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
-            if (e.getTarget() == this) e.consume();
-        });
     }
     public void updateDefinition(BlockDef newDef) {
         this.definition = newDef;
@@ -56,38 +48,28 @@ public class BlockNode extends HBox {
         buildUI();
     }
     private void buildUI() {
-        this.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-            if (event.getTarget() == this) {
-                event.consume();
-            }
-        });
         getStyleClass().setAll(STYLE_CLASSES);
-        getStyleClass().setAll("block-node", TYPE_CLASSES.get(definition.getType()));
+        getStyleClass().clear();
+        getStyleClass().add("block-node");
+        getStyleClass().add("block-type-" + definition.getType().name().toLowerCase());
         String color = TYPE_COLORS.getOrDefault(definition.getType(), "#2196F3");
+        getChildren().clear();
+        getStyleClass().add("block-node-" + UUID.randomUUID().toString());
         String inputStyle = "-fx-background-color: white;" +
                 "-fx-text-fill: #333;" +
                 "-fx-font-size: 14px;" +
                 "-fx-padding: 3 5;";
-
         getStyleClass().add(TYPE_CLASSES.get(definition.getType()));
         inputControls.values().forEach(control -> {
             if (control instanceof TextField) {
                 ((TextField) control).setStyle(inputStyle);
-                ((TextField) control).setOnMouseClicked(e -> {
-                    System.out.println("TextField clicked");
-                    if (e.getClickCount() == 1) {
-                        ((TextField) control).requestFocus();
-                        ((TextField) control).selectAll();
-                    }
-                });
             } else if (control instanceof ComboBox) {
                 ((ComboBox<?>) control).setStyle(inputStyle);
             }
         });
         Text grip = new Text("≡");
-        grip.setPickOnBounds(true);
         grip.setFill(Color.WHITE);
-        /*grip.setOnDragDetected(e -> {
+        grip.setOnDragDetected(e -> {
             Dragboard db = startDragAndDrop(TransferMode.MOVE);
             SnapshotParameters params = new SnapshotParameters();
             params.setFill(Color.TRANSPARENT);
@@ -96,13 +78,10 @@ public class BlockNode extends HBox {
             content.put(DataFormat.lookupMimeType("block/def"), definition);
             db.setContent(content);
             e.consume();
-        });*/
+        });
         Label mainLabel = new Label(definition.getDisplayName());
         mainLabel.setTextFill(Color.WHITE);
         HBox paramsBox = new HBox(5);
-        definition.getParams().forEach(param ->
-                paramsBox.getChildren().add(createInputControl(param))
-        );
         paramsBox.setAlignment(Pos.CENTER_LEFT);
         int paramIndex = 0;
         for (ParamType paramType : definition.getParams()) {
@@ -119,7 +98,6 @@ public class BlockNode extends HBox {
         HBox content = new HBox(10, grip, mainLabel, paramsBox);
         content.setAlignment(Pos.CENTER_LEFT);
         content.setPadding(new Insets(0));
-        content.setPickOnBounds(false);
         VBox mainContainer = new VBox(5, content, substacksBox);
         mainContainer.setStyle("-fx-background-color: transparent;");
         getChildren().add(mainContainer);
@@ -140,10 +118,22 @@ public class BlockNode extends HBox {
         return switch (paramType) {
             case NUMBER -> {
                 TextField tf = new TextField("10");
-                tf.getStyleClass().add("block-textfield");
-                tf.setMouseTransparent(false);
-                tf.setFocusTraversable(true);
-                tf.addEventFilter(MouseEvent.MOUSE_PRESSED, Event::consume);
+                tf.setStyle("-fx-background-color: white !important;" +
+                        "-fx-text-fill: black !important;" +
+                        "-fx-pref-width: 60;");
+                tf.getStyleClass().add("block-node-textfield");
+                tf.setPrefWidth(60);
+                tf.textProperty().addListener((obs, oldVal, newVal) -> {
+                    if (!newVal.matches("-?\\d*\\.?\\d*")) {
+                        tf.setText(oldVal);
+                    }
+                });
+                tf.setOnMouseClicked(e -> {
+                    if (e.getClickCount() == 1) {
+                        tf.requestFocus();
+                        tf.selectAll();
+                    }
+                });
                 yield tf;
             }
             case BOOLEAN -> {
